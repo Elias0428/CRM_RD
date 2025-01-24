@@ -29,10 +29,8 @@ SECRET_KEY = 'django-insecure-wxwjr&9_la5a&fe9i@=fwe(gjze$wsz$lwac&=5mmy&557vyzg
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-#CSRF_TRUSTED_ORIGINS = ['https://blue.lapeira.com', 'https://www.blue.lapeira.com']
-#ALLOWED_HOSTS = ['blue.lapeira.com', 'www.blue.lapeira.com']
-
-ALLOWED_HOSTS = ['*']
+CSRF_TRUSTED_ORIGINS = ['https://rd25.lapeira.com', 'https://www.rd25.lapeira.com']
+ALLOWED_HOSTS = ['rd25.lapeira.com', 'www.rd25.lapeira.com']
 
 #Configuration to use own user model
 AUTH_USER_MODEL = 'app.user'  
