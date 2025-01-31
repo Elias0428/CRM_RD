@@ -114,8 +114,13 @@ def formCreateClient(request):
     if request.method == 'POST':
 
         date_births = request.POST.get('date_birth')
-        fecha_obj = datetime.strptime(date_births, '%m/%d/%Y')
+        fecha_obj = datetime.strptime(date_births, '%m/%d/%Y').date()
         fecha_formateada = fecha_obj.strftime('%Y-%m-%d')
+
+        # Obtener la fecha actual
+        hoy = datetime.today().date()
+        # Calcular la edad
+        edad = hoy.year - fecha_obj.year - ((hoy.month, hoy.day) < (fecha_obj.month, fecha_obj.day))
 
         social = request.POST.get('social_security')
 
@@ -127,6 +132,7 @@ def formCreateClient(request):
             client = form.save(commit=False)
             client.agent = request.user
             client.is_active = 1
+            client.old = edad
             client.date_birth = fecha_formateada
             client.social_security = formatSocial
             client.save()
@@ -144,13 +150,32 @@ def formCreateClient(request):
 @login_required(login_url='/login') 
 def formEditClient(request, client_id):
     
-    client = get_object_or_404(Client, id=client_id)
+    client = get_object_or_404(Client, id=client_id)        
 
     if request.method == 'POST':
+
+        date_births = request.POST.get('date_birth')
+        fecha_obj = datetime.strptime(date_births, '%m/%d/%Y').date()
+        fecha_formateada = fecha_obj.strftime('%Y-%m-%d')
+
+        # Obtener la fecha actual
+        hoy = datetime.today().date()
+        # Calcular la edad
+        edad = hoy.year - fecha_obj.year - ((hoy.month, hoy.day) < (fecha_obj.month, fecha_obj.day))
+
+        social = request.POST.get('social_security')
+
+        if social: formatSocial = social.replace('-','')
+        else: formatSocial = None
         form = ClientForm(request.POST, instance=client)
+        print(form.errors)
         if form.is_valid():
             client = form.save(commit=False)
             client.is_active = 1
+            client.date_birth = fecha_formateada
+            client.social_security = formatSocial
+            client.old = edad
+            
             client.save()
             return redirect('formCreatePlan', client.id) 
         
@@ -2000,7 +2025,7 @@ def salesBonusAgent(start_date=None, end_date=None):
         .annotate(total_sales=Count('id'))
 
     # Consulta para ObamaCare
-    sales_query_obamacare = ObamaCare.objects.select_related('agent') \
+    sales_query_obamacare = ObamaCare.objects.select_related('agent').filter(is_active = True) \
         .values('agent__id', 'agent__username', 'agent__first_name', 'agent__last_name', 'status_color') \
         .annotate(total_sales=Count('id'))
 
@@ -2972,6 +2997,8 @@ def consent(request, obamacare_id):
     if request.method == 'POST':
         documents = request.FILES.getlist('documents')  # Lista de archivos subidos
 
+        language = request.GET.get('lenguaje', 'es')  # Idioma predeterminado si no se pasa
+
         objectClient = save_data_from_request(Client, request.POST, ['agent'],obamacare.client)
         objectObamacare = save_data_from_request(ObamaCare, request.POST, ['signature'], obamacare)
         
@@ -2983,7 +3010,7 @@ def consent(request, obamacare_id):
                 file=document,
                 client=obamacare.client)  # Crear una nueva instancia de Foto
             photo.save()  # Guardar el archivo en la base de datos
-        return generateConsentPdf(request, objectObamacare, dependents, supps)
+        return generateConsentPdf(request, objectObamacare, dependents, supps, language)
 
     
 
@@ -3016,6 +3043,9 @@ def incomeLetter(request, obamacare_id):
         return HttpResponse('Acceso denegado. Por favor, inicie sesión o use un enlace válido.')
     obamacare = ObamaCare.objects.select_related('client').get(id=obamacare_id)
     signed = IncomeLetter.objects.filter(obamacare = obamacare_id).first()
+
+    language = request.GET.get('lenguaje', 'es')  # Idioma predeterminado si no se pasa
+    activate(language)
     
     context = {
         'obamacare': obamacare,
@@ -3024,13 +3054,13 @@ def incomeLetter(request, obamacare_id):
     if request.method == 'POST':
         objectClient = save_data_from_request(Client, request.POST, ['agent'],obamacare.client)
         objectObamacare = save_data_from_request(ObamaCare, request.POST, ['signature'], obamacare)
-        generateIncomeLetterPDF(request, objectObamacare)
+        generateIncomeLetterPDF(request, objectObamacare, language)
         deactivateTemporaryToken(request)
         return render(request, 'consent/endView.html')
 
     return render(request, 'consent/incomeLetter.html', context)
 
-def generateConsentPdf(request, obamacare, dependents, supps):
+def generateConsentPdf(request, obamacare, dependents, supps, language):
     token = request.GET.get('token')
 
     current_date = datetime.now().strftime("%A, %B %d, %Y %I:%M")
@@ -3075,6 +3105,8 @@ def generateConsentPdf(request, obamacare, dependents, supps):
         'var':var
     }
 
+    activate(language)
+
     # Renderiza la plantilla HTML a un string
     html_content = render_to_string('consent/templatePdfConsent.html', context)
 
@@ -3091,12 +3123,12 @@ def generateConsentPdf(request, obamacare, dependents, supps):
     consent.pdf.save(pdf_name, ContentFile(pdf_io.read()), save=True)
 
     base_url = reverse('incomeLetter', args=[obamacare.id])
-    query_params = urlencode({'token': token})
+    query_params = urlencode({'token': token, 'lenguaje': language})
     url = f'{base_url}?{query_params}'
 
     return redirect(url)
 
-def generateIncomeLetterPDF(request, obamacare):
+def generateIncomeLetterPDF(request, obamacare, language):
     current_date = datetime.now().strftime("%A, %B %d, %Y %I:%M")
 
     incomeLetter = IncomeLetter.objects.create(
@@ -3115,6 +3147,8 @@ def generateIncomeLetterPDF(request, obamacare):
         'ip':getIPClient(request),
         'incomeLetter':incomeLetter
     }
+
+    activate(language)
 
     # Renderiza la plantilla HTML a un string
     html_content = render_to_string('consent/templatePdfIncomeLetter.html', context)
