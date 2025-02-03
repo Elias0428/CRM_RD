@@ -2975,6 +2975,10 @@ def generar_reporte(request):
 def consent(request, obamacare_id):
     obamacare = ObamaCare.objects.select_related('client').get(id=obamacare_id)
     temporalyURL = None
+
+    if request.method == 'GET':
+        language = request.GET.get('lenguaje', 'es')  # Idioma predeterminado si no se pasa
+        activate(language)
     # Validar si el usuario no está logueado y verificar el token
     if isinstance(request.user, AnonymousUser):
         result = validateTemporaryToken(request)
@@ -2982,7 +2986,7 @@ def consent(request, obamacare_id):
         if not is_valid_token:
             return HttpResponse(note)
     elif request.user.is_authenticated:
-        temporalyURL = f"{request.build_absolute_uri('/viewConsent/')}{obamacare_id}?token={generateTemporaryToken(obamacare)}"
+        temporalyURL = f"{request.build_absolute_uri('/viewConsent/')}{obamacare_id}?token={generateTemporaryToken(obamacare)}&lenguaje={language}"
         print('Usuario autenticado')
     else:
         # Si el usuario no está logueado y no hay token válido
@@ -3012,8 +3016,6 @@ def consent(request, obamacare_id):
             photo.save()  # Guardar el archivo en la base de datos
         return generateConsentPdf(request, objectObamacare, dependents, supps, language)
 
-    
-
     context = {
         'valid_migration_statuses': ['PERMANENT_RESIDENT', 'US_CITIZEN', 'EMPLOYMENT_AUTHORIZATION'],
         'obamacare':obamacare,
@@ -3024,9 +3026,6 @@ def consent(request, obamacare_id):
         'temporalyURL': temporalyURL,
         'supps': supps
     }
-    if request.method == 'GET':
-        language = request.GET.get('lenguaje', 'es')  # Idioma predeterminado si no se pasa
-        activate(language)
     return render(request, 'consent/consent1.html', context)
 
 def incomeLetter(request, obamacare_id):
