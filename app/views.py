@@ -741,7 +741,7 @@ def editClientObama(request, obamacare_id):
         action = request.POST.get('action')
         if action == 'validate_key':
             provided_key = request.POST.get('key')
-            correct_key = 'Sseguros22@'  # Cambia por tu lógica segura
+            correct_key = 'Panic2594$'  # Cambia por tu lógica segura
 
             if provided_key == correct_key and social_number:
                 return JsonResponse({'status': 'success', 'social': social_number})
