@@ -2677,7 +2677,7 @@ def upload_excel(request):
                 excel_metadata = ExcelFileMetadata.objects.create(
                     file_name=file_name,
                     description=description,
-                    uploaded_at=datetime.datetime.now()
+                    uploaded_at=datetime.now()
                 )
 
                 # Guardar el DataFrame en la sesión para usarlo después
