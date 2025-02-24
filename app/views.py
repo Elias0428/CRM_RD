@@ -62,6 +62,7 @@ def login_(request):
             return redirect(motivationalPhrase)
         else:
             msg = 'Datos incorrectos, intente de nuevo'
+            msg = 'Incorrect data, try again.'
             return render(request, 'auth/login.html', {'msg':msg})
     else:
         return render(request, 'auth/login.html')
@@ -746,7 +747,7 @@ def editClientObama(request, obamacare_id):
             if provided_key == correct_key and social_number:
                 return JsonResponse({'status': 'success', 'social': social_number})
             else:
-                return JsonResponse({'status': 'error', 'message': 'Clave incorrecta o no hay número disponible'})
+                return JsonResponse({'status': 'error', 'message': 'Incorrect key or no number available'})
     
 
     obsObama = ObservationAgent.objects.filter(id_obamaCare=obamacare_id)
@@ -953,7 +954,7 @@ def editClientSupp(request, supp_id):
             if provided_key == correct_key and social_number:
                 return JsonResponse({'status': 'success', 'social': social_number})
             else:
-                return JsonResponse({'status': 'error', 'message': 'Clave incorrecta o no hay número disponible'})
+                return JsonResponse({'status': 'error', 'message': 'Incorrect key or no number available'})
 
     if request.method == 'POST':
 
@@ -1231,7 +1232,7 @@ def formCreateUser(request):
         try:
             # Validar si el username ya existe
             if User.objects.filter(username=username).exists():
-                return render(request, 'forms/formCreateUser.html', {'msg':f'El nombre de usuario "{username}" ya está en uso.','users':users, 'type':'error'})
+                return render(request, 'forms/formCreateUser.html', {'msg':f'The username “{username}” is already in use.', 'users':users, 'type':'error'})
             
             # Crear el usuario si no existe el username
             user = User.objects.create(
@@ -1243,7 +1244,7 @@ def formCreateUser(request):
             )
 
             context = {
-                'msg':f'Usuario {user.username} creado con éxito.',
+                'msg':f'User {user.username} successfully created.',
                 'users':users,
                 'type':'good',
                 'roles': roles
@@ -1273,7 +1274,7 @@ def editUser(request, user_id):
 
         # Verificar si el nuevo username ya existe en otro usuario
         if username != user.username and User.objects.filter(username=username).exists():
-            return JsonResponse({'error': f'El nombre de usuario "{username}" ya está en uso.'}, status=400)
+            return JsonResponse({'error': f'The username “{username}” is already in use.'}, status=400)
 
         # Actualizar los datos del usuario
         user.first_name = first_name
@@ -1336,14 +1337,14 @@ def saveCustomerObservationACA(request):
                 typification=typification_text, # Guardamos las observaciones en el campo 'typification'
                 content=content
             )
-            messages.success(request, "Observación guardada exitosamente.")
+            messages.success(request, "Observation successfully saved.")
         else:
-            messages.error(request, "El contenido de la observación no puede estar vacío.")
+            messages.error(request, "The content of the observation cannot be empty.")
 
         return redirect('editClientObama', plan.id)       
         
     else:
-        return HttpResponse("Método no permitido.", status=405)
+        return HttpResponse("Not allowed method.", status=405)
 
 @login_required(login_url='/login') 
 def saveCustomerObservationSupp(request):
@@ -1371,9 +1372,9 @@ def saveCustomerObservationSupp(request):
                 typification=typification_text, # Guardamos las observaciones en el campo 'typification'
                 content=content
             )
-            messages.success(request, "Observación guardada exitosamente.")
+            messages.success(request, "Observation successfully saved.")
         else:
-            messages.error(request, "El contenido de la observación no puede estar vacío.")
+            messages.error(request, "The content of the observation cannot be empty.")
 
         return redirect('editClientSupp', plan.id)        
         
@@ -1466,7 +1467,7 @@ def get_observation_detail(request, observation_id):
         
         return JsonResponse(data)
     except ObservationCustomer.DoesNotExist:
-        return JsonResponse({'error': 'Registro no encontrado'}, status=404)
+        return JsonResponse({'error': 'Record not found'}, status=404)
 
 def toggleTypification(request, typifications_id):
     # Obtener el cliente por su ID
@@ -2688,7 +2689,7 @@ def upload_excel(request):
             except Exception as e:
                 return render(request, 'excel/upload_excel.html', {
                     'form': form,
-                    'error': f"Error al procesar el archivo: {str(e)}"
+                    'error': f"Error processing the file: {str(e)}"
                 })
 
             # Renderizar la página de mapeo
@@ -2714,7 +2715,7 @@ def process_and_save(request):
         # Recuperar la ruta del archivo desde la sesión
         uploaded_file_path = request.session.get('uploaded_file_path')
         if not uploaded_file_path or not os.path.exists(uploaded_file_path):
-            return render(request, 'excel/upload_excel.html', {'error': 'No se encontró el archivo Excel. Por favor, súbelo nuevamente.'})
+            return render(request, 'excel/upload_excel.html', {'error': 'The Excel file was not found. Please upload it again.'})
 
         try:
             # Leer el archivo Excel desde la ruta temporal
@@ -2730,7 +2731,7 @@ def process_and_save(request):
 
         except Exception as e:
             return render(request, 'excel/upload_excel.html', {
-                'error': f"Error al procesar el archivo: {str(e)}"
+                'error': f"Error processing the file: {str(e)}"
             })
 
         # Limpiar la sesión y eliminar el archivo temporal
@@ -2756,7 +2757,7 @@ def save_data(request):
         uploaded_data = request.session.get('uploaded_data')
         metadata_id = request.session.get('metadata_id')
         if not uploaded_data or not metadata_id:
-            return render(request, 'excel/upload_excel.html', {'error': 'No se encontraron datos para procesar.'})
+            return render(request, 'excel/upload_excel.html', {'error': 'No data found for processing.'})
 
         # Recuperar el registro de ExcelFileMetadata
         excel_metadata = ExcelFileMetadata.objects.get(id=metadata_id)
@@ -2777,24 +2778,24 @@ def save_data(request):
                     value = row[header]
                     # Validaciones por campo del modelo
                     if model_field == 'first_name' and not isinstance(value, str):
-                        row_errors[model_field] = 'Debe ser una cadena de texto.'
+                        row_errors[model_field] = 'Must be a text string.'
                     elif model_field == 'last_name' and value is not None and not isinstance(value, str):
-                        row_errors[model_field] = 'Debe ser una cadena de texto o nulo.'
+                        row_errors[model_field] = 'Must be a text string or null.'
                     elif model_field == 'phone':
                         try:
                             value = int(value)
                         except (ValueError, TypeError):
-                            row_errors[model_field] = 'Debe ser un número entero.'
+                            row_errors[model_field] = 'Must be an integer.'
                     elif model_field == 'zipCode':
                         try:
                             value = int(value)
                         except (ValueError, TypeError):
-                            row_errors[model_field] = 'Debe ser un número entero.'
+                            row_errors[model_field] = 'Must be an integer.'
                     elif model_field == 'agent_id' and value is not None:
                         try:
                             value = int(value)
                         except (ValueError, TypeError):
-                            row_errors[model_field] = 'Debe ser un número entero o nulo.'
+                            row_errors[model_field] = 'Must be an integer or null.'
 
                     data[model_field] = value
 
@@ -2821,7 +2822,7 @@ def save_data(request):
         request.session.pop('uploaded_headers', None)
         request.session.pop('metadata_id', None)
 
-        return render(request, 'excel/success.html', {'message': 'Datos guardados exitosamente.'})
+        return render(request, 'excel/success.html', {'message': 'Data successfully saved.'})
     else:
         return redirect('excel/upload_excel')
 
@@ -2847,7 +2848,7 @@ def manage_agent_assignments(request):
             return render(request, 'excel/manage_agent_assignments.html', {
                 'files': ExcelFileMetadata.objects.all(),
                 'users': User.objects.filter(role='A',is_active=True),
-                'error': 'El archivo seleccionado no es válido.'
+                'error': 'The selected file is invalid.'
             })
 
         # Validar que se seleccionen usuarios
@@ -2855,7 +2856,7 @@ def manage_agent_assignments(request):
             return render(request, 'excel/manage_agent_assignments.html', {
                 'files': ExcelFileMetadata.objects.all(),
                 'users': User.objects.filter(role='A',is_active=True),
-                'error': 'Debes seleccionar al menos un usuario.'
+                'error': 'You must select at least one user.'
             })
 
         if action == 'assign':
@@ -2865,7 +2866,7 @@ def manage_agent_assignments(request):
                 return render(request, 'excel/manage_agent_assignments.html', {
                     'files': ExcelFileMetadata.objects.all(),
                     'users': User.objects.filter(role='A',is_active=True),
-                    'error': 'Los usuarios seleccionados no son válidos.'
+                    'error': 'Selected users are invalid.'
                 })
 
             # Recuperar registros asociados al archivo
@@ -2881,7 +2882,7 @@ def manage_agent_assignments(request):
             return render(request, 'excel/manage_agent_assignments.html', {
                 'files': ExcelFileMetadata.objects.all(),
                 'users': User.objects.filter(role='A',is_active=True),
-                'success': f'Registros de {file.file_name} distribuidos exitosamente entre los usuarios seleccionados.'
+                'success': f'{file.file_name} records successfully distributed to selected users.'
             })
 
         elif action == 'remove':
@@ -2891,14 +2892,14 @@ def manage_agent_assignments(request):
             return render(request, 'excel/manage_agent_assignments.html', {
                 'files': ExcelFileMetadata.objects.all(),
                 'users': User.objects.filter(role='A',is_active=True),
-                'success': f'Asignaciones eliminadas para los agentes seleccionados del archivo {file.file_name}.'
+                'success': f'Deleted assignments for the selected agents from the {file.file_name} file..'
             })
 
         else:
             return render(request, 'excel/manage_agent_assignments.html', {
                 'files': ExcelFileMetadata.objects.all(),
                 'users': User.objects.filter(role='A',is_active=True),
-                'error': 'Acción no válida.'
+                'error': 'Invalid action.'
             })
 
     return render(request, 'excel/manage_agent_assignments.html', {
@@ -2976,9 +2977,8 @@ def consent(request, obamacare_id):
     obamacare = ObamaCare.objects.select_related('client').get(id=obamacare_id)
     temporalyURL = None
 
-    if request.method == 'GET':
-        language = request.GET.get('lenguaje', 'es')  # Idioma predeterminado si no se pasa
-        activate(language)
+    language = request.GET.get('lenguaje', 'es')  # Idioma predeterminado si no se pasa
+    activate(language)
     # Validar si el usuario no está logueado y verificar el token
     if isinstance(request.user, AnonymousUser):
         result = validateTemporaryToken(request)
@@ -2990,7 +2990,7 @@ def consent(request, obamacare_id):
         print('Usuario autenticado')
     else:
         # Si el usuario no está logueado y no hay token válido
-        return HttpResponse('Acceso denegado. Por favor, inicie sesión o use un enlace válido.')
+        return HttpResponse('Access denied. Please login or use a valid link.')
     
     dependents = Dependent.objects.filter(client=obamacare.client)
     supps = Supp.objects.filter(client_id=obamacare.client.id)
@@ -2999,9 +2999,9 @@ def consent(request, obamacare_id):
 
 
     if request.method == 'POST':
+        if request.user.is_authenticated:
+            return HttpResponse('Sorry, an Agent cannot sign for the client.')
         documents = request.FILES.getlist('documents')  # Lista de archivos subidos
-
-        language = request.GET.get('lenguaje', 'es')  # Idioma predeterminado si no se pasa
 
         objectClient = save_data_from_request(Client, request.POST, ['agent'],obamacare.client)
         objectObamacare = save_data_from_request(ObamaCare, request.POST, ['signature'], obamacare)
@@ -3039,7 +3039,7 @@ def incomeLetter(request, obamacare_id):
         print('Usuario autenticado')
     else:
         # Si el usuario no está logueado y no hay token válido
-        return HttpResponse('Acceso denegado. Por favor, inicie sesión o use un enlace válido.')
+        return HttpResponse('Access denied. Please login or use a valid link.')
     obamacare = ObamaCare.objects.select_related('client').get(id=obamacare_id)
     signed = IncomeLetter.objects.filter(obamacare = obamacare_id).first()
 

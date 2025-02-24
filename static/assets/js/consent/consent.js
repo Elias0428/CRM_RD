@@ -206,7 +206,10 @@ inputs.forEach(input => {
 
 // Actualizar el span con los valores de los inputs
 function updateSpan() {
+    console.log(document.getElementById('textName3'))
     changeSpan('textName', `${inputName.value} ${inputLastName.value}`);
+    changeSpan('textName2', `${inputName.value} ${inputLastName.value}`);
+    changeSpan('textName3', `${inputName.value} ${inputLastName.value}`);
 }
 
 // Agregar evento al cambio del selectAgent
@@ -340,5 +343,86 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
+/**
+ * Función que escucha cambios en inputs basado en un array de IDs
+ * @param {string[]} inputIds - Array con los IDs de los inputs a escuchar
+ * @param {Function} callback - Función que se ejecutará cuando cambie algún input
+ */
+function listenToInputChanges(inputIds, callback) {
+  // Validar parámetros
+  if (!Array.isArray(inputIds)) {
+    throw new Error("El primer parámetro debe ser un array de strings");
+  }
 
+  if (typeof callback !== "function") {
+    throw new Error("El segundo parámetro debe ser una función callback");
+  }
 
+  // Objeto para almacenar los valores actuales
+  const currentValues = {};
+
+  // Función para manejar los cambios
+  function handleChange(event) {
+    const inputId = event.target.id;
+    const newValue = event.target.value;
+
+    // Actualizar el valor en nuestro registro
+    currentValues[inputId] = newValue;
+
+    // Ejecutar callback con el id, valor y todos los valores actuales
+    callback({
+      inputId,
+      value: newValue,
+      allValues: { ...currentValues },
+    });
+  }
+
+  // Agregar listeners a cada input
+  inputIds.forEach((id) => {
+    const inputElement = document.getElementById(id);
+
+    if (!inputElement) {
+      console.warn(`Input con ID '${id}' no encontrado`);
+      return;
+    }
+
+    // Guardar valor inicial
+    currentValues[id] = inputElement.value;
+
+    // Agregar event listener
+    inputElement.addEventListener("input", handleChange);
+  });
+
+  // Retornar función para eliminar los listeners cuando ya no se necesiten
+  return function removeListeners() {
+    inputIds.forEach((id) => {
+      const inputElement = document.getElementById(id);
+      if (inputElement) {
+        inputElement.removeEventListener("input", handleChange);
+      }
+    });
+  };
+}
+
+const inputIdsToListen = ['inputName', 'inputLastName', 'inputPhone', 'inputAddress', 'inputCity', 'inputState' ,'inputZipcode', 'inputDateBirth', 'inputTaxes', 'work', 'migration_status', 'selectAgent', 'insuranceAgency'];
+
+const cleanup = listenToInputChanges(inputIdsToListen, (data) => {
+    if (['inputName', 'inputLastName'].includes(data.inputId)) {
+        changeinputsValue(`inputNameHidden`, `${data.allValues.inputName} ${data.allValues.inputLastName}`)
+    }else if (['inputAddress', 'inputApto', 'inputCity', 'inputState', 'inputZipcode'].includes(data.inputId)){
+        changeinputsValue(`inputAddressHidden`, `${data.allValues.inputAddress} ${data.allValues.inputCity} ${data.allValues.inputState} ${data.allValues.inputZipcode}`)
+    }else if(data.inputId == 'agent_usa'){
+        console.log(data.inputId)
+        changeinputsValue(`selectAgentHidden`, data.allValues.selectAgent)
+        changeinputsValue(`insuranceAgencyHidden`, data.allValues.insuranceAgency)
+    }else{
+        changeinputsValue(`${data.inputId}Hidden`, data.value)
+    }
+});
+
+function changeinputsValue(id, text) {
+    console.log(id)
+    const input = document.getElementById(id)
+    console.log(input)
+    input.value = text 
+}
